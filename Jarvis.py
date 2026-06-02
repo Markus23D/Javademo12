@@ -6,6 +6,7 @@ import os
 import time
 import asyncio
 import tempfile
+import random
 
 import sounddevice as sd
 from vosk import Model, KaldiRecognizer
@@ -28,6 +29,41 @@ audio_queue = queue.Queue()
 
 pyautogui.FAILSAFE = True
 pyautogui.PAUSE = 0.4
+
+
+# =========================
+# MEMORY SYSTEM
+# =========================
+
+memory = {
+    "last_command": None,
+    "last_plan": None,
+    "history": []
+}
+
+
+def save_memory(command, plan):
+    memory["last_command"] = command
+    memory["last_plan"] = plan
+    memory["history"].append(command)
+
+
+# =========================
+# NATURAL RESPONSES
+# =========================
+
+responses = [
+    "Got it",
+    "On it",
+    "Okay",
+    "Done",
+    "Right away",
+    "Sure"
+]
+
+
+def natural_reply():
+    return random.choice(responses)
 
 
 # =========================
@@ -73,7 +109,7 @@ stream = sd.RawInputStream(
 
 stream.start()
 
-print("Jarvis 4.3 Workflow Mode online...")
+print("Jarvis 4.4 online...")
 
 
 # =========================
@@ -113,11 +149,8 @@ def type_text(text):
     pyautogui.write(text, interval=0.05)
 
 
-def click(x=None, y=None):
-    if x and y:
-        pyautogui.click(x, y)
-    else:
-        pyautogui.click()
+def click():
+    pyautogui.click()
 
 
 def press(keys):
@@ -187,14 +220,17 @@ def brain(text):
 
 
 # =========================
-# ⚙️ WORKFLOW EXECUTOR
+# ⚙️ EXECUTION ENGINE
 # =========================
 
 def execute(plan):
+    reply = natural_reply()
+    speak(reply)
+
     for step in plan:
 
         # -------------------------
-        # WORKFLOW STEPS (DICT)
+        # WORKFLOW MODE
         # -------------------------
         if isinstance(step, dict):
 
@@ -218,7 +254,7 @@ def execute(plan):
 
 
         # -------------------------
-        # LEGACY ACTIONS (TUPLES)
+        # LEGACY MODE
         # -------------------------
         else:
             action, value = step
@@ -245,7 +281,7 @@ def execute(plan):
                 click()
 
             elif action == "shutdown":
-                speak("Are you sure you want to shutdown?")
+                speak("Are you sure?")
                 confirm = listen()
                 if "yes" in confirm:
                     speak("Shutting down")
@@ -254,13 +290,17 @@ def execute(plan):
                     speak("Cancelled")
 
             elif action == "restart":
-                speak("Are you sure you want to restart?")
+                speak("Are you sure?")
                 confirm = listen()
                 if "yes" in confirm:
                     speak("Restarting")
                     restart_pc()
                 else:
                     speak("Cancelled")
+
+
+    # Save memory after execution
+    save_memory(" | ".join([str(step) for step in plan]), plan)
 
 
 # =========================
@@ -289,7 +329,14 @@ while running:
     plan = brain(command)
 
     if not plan:
-        speak("I didn't understand that")
+        speak(natural_reply())
         continue
 
     execute(plan)
+
+    memory["last_command"] = command
+    memory["last_plan"] = plan
+    memory["history"].append(command)
+
+    if len(memory["history"]) > 20:
+        memory["history"] = memory["history"][-20:]
