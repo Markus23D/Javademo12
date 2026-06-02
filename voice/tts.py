@@ -1,56 +1,71 @@
 import asyncio
-import numpy as np
-import sounddevice as sd
 import edge_tts
-import queue
+import sounddevice as sd
+import numpy as np
+import io
+from pydub import AudioSegment
 import threading
-import time
-from Congif import VOICE
+import queue
+
+VOICE = "en-GB-RyanNeural"
+
+speech_queue = queue.Queue()
+is_speaking = False
 
 
-voice_queue = queue.PriorityQueue()
-stop_signal = False
-lock = threading.Lock()
-
-
-def speak(text, priority=1):
-    print("Jarvis:", text)
-    voice_queue.put((priority, time.time(), text))
+# -----------------------
+# PUBLIC API
+# -----------------------
+def speak(text: str):
+    speech_queue.put(text)
 
 
 def stop():
-    global stop_signal
-    stop_signal = True
+    global is_speaking
+    is_speaking = False
     sd.stop()
 
 
+# -----------------------
+# WORKER THREAD
+# -----------------------
 def voice_worker():
-    global stop_signal
-
     while True:
-        _, _, text = voice_queue.get()
-
-        stop_signal = False
-
-        with lock:
+        text = speech_queue.get()
+        try:
             asyncio.run(_speak(text))
+        except Exception as e:
+            print("[TTS ERROR]", e)
 
 
 threading.Thread(target=voice_worker, daemon=True).start()
 
 
-async def _speak(text):
+# -----------------------
+# CORE TTS
+# -----------------------
+async def _speak(text: str):
+    global is_speaking
+    is_speaking = True
+
     communicate = edge_tts.Communicate(text, VOICE)
 
-    buffer = bytearray()
+    audio_bytes = bytearray()
 
+    # STREAM COLLECTION (faster + safer than string concat)
     async for chunk in communicate.stream():
-        if stop_signal:
+        if not is_speaking:
             return
+
         if chunk["type"] == "audio":
-            buffer.extend(chunk["data"])
+            audio_bytes.extend(chunk["data"])
 
-    audio = np.frombuffer(buffer, dtype=np.int16)
+    # decode in memory
+    audio = AudioSegment.from_file(io.BytesIO(audio_bytes), format="mp3")
 
-    sd.play(audio, samplerate=24000)
-    sd.wait()
+    samples = np.array(audio.get_array_of_samples(), dtype=np.int16)
+
+    # FORCE SAFE OUTPUT RATE
+    sd.play(samples, samplerate=audio.frame_rate, blocking=False)
+
+    is_speaking = False

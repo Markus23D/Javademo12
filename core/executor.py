@@ -5,35 +5,65 @@ import pyautogui
 import os
 
 
-def execute(plan):
+class Executor:
 
-    for action, value in plan:
+    def __init__(self):
+        self.actions = {
+            "wait": self.wait,
+            "open_url": self.open_url,
+            "open_app": self.open_app,
+            "youtube_search": self.youtube_search,
+            "type": self.type_text,
+            "shutdown": self.shutdown
+        }
 
-        print("EXEC:", action, value)
+    # -----------------------
+    # MAIN ENTRY
+    # -----------------------
+    def execute(self, plan):
+        if not plan:
+            return
 
-        if action == "wait":
-            time.sleep(value)
+        for action, value in plan:
+            print("EXEC:", action, value)
 
-        elif action == "open_url":
-            webbrowser.open(value)
+            handler = self.actions.get(action)
 
-        elif action == "open_app":
+            if handler:
+                try:
+                    handler(value)
+                except Exception as e:
+                    print(f"[EXEC ERROR] {action}: {e}")
+            else:
+                print(f"[UNKNOWN ACTION] {action}")
 
-            if value == "chrome":
-                subprocess.Popen(
-                    r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-                )
+    # -----------------------
+    # ACTIONS
+    # -----------------------
+    def wait(self, value):
+        time.sleep(value)
 
-        elif action == "youtube_search":
+    def open_url(self, value):
+        webbrowser.open(value)
 
-            query = value.replace(" ", "+")
+    def open_app(self, value):
+        apps = {
+            "chrome": r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+        }
 
-            webbrowser.open(
-                f"https://youtube.com/results?search_query={query}"
-            )
+        path = apps.get(value)
 
-        elif action == "type":
-            pyautogui.write(value)
+        if path:
+            subprocess.Popen(path)
+        else:
+            print(f"[APP NOT FOUND] {value}")
 
-        elif action == "shutdown":
-            os.system("shutdown /s /t 5")
+    def youtube_search(self, value):
+        query = value.replace(" ", "+")
+        webbrowser.open(f"https://youtube.com/results?search_query={query}")
+
+    def type_text(self, value):
+        pyautogui.write(value)
+
+    def shutdown(self, value=None):
+        os.system("shutdown /s /t 5")

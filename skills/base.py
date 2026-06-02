@@ -1,9 +1,11 @@
-class Skill:
+from abc import ABC, abstractmethod
 
-    name = "base"
+class Skill(ABC):
 
-    def can_handle(self, text):
-        return 0.0
+    @abstractmethod
+    def can_handle(self, text: str) -> float:
+        pass
 
-    def handle(self, text, context):
-        return [], 0.0
+    @abstractmethod
+    def handle(self, text: str, context):
+        pass

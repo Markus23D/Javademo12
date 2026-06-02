@@ -1,37 +1,56 @@
-from core.brain import load_skills
-from core.brain import brain
+from core.brain import load_skills, brain
+from core.context import Context
+from core.executor import Executor
 
-from core.context import context
+from voice.audio_bus import AudioBus
+from voice.stt import STT
+from voice.tts import speak, stop
 
-from core.executor import execute
-from skills.registry import SKILL_REGISTRY
-
-from voice.stt import listen
-from voice.tts import speak
+import threading
 
 
+# -----------------------
+# INIT
+# -----------------------
 load_skills()
 
+bus = AudioBus()
+context = Context()
+executor = Executor()
 
-speak("What can i do for you sir")
+stt = STT(bus)
 
+
+# -----------------------
+# THREADS
+# -----------------------
+threading.Thread(target=stt.start, daemon=True).start()
+
+print("Jarvis online")
+
+speak("What can I do for you sir")
+
+
+# -----------------------
+# MAIN LOOP
+# -----------------------
 while True:
 
-    text = listen()
-
+    text = bus.get_stt()
     if not text:
         continue
 
     print("Heard:", text)
 
-    plan = brain(text, context)
+    # interrupt speech if user talks
+    stop()
+
+    result = brain(text, context)
+    plan = result.get("plan")
 
     if not plan:
-
-        speak("I didn't understand that")
-
+        bus.push_tts("I didn't understand that")
         continue
 
-    execute(plan)
-
+    executor.execute(plan)
     context.remember(text)
