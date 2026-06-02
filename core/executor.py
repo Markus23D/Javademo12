@@ -6,6 +6,9 @@ import pyautogui
 
 def execute(plan):
 
+    if not plan:
+        return
+
     for action, value in plan:
 
         if action == "open_app":

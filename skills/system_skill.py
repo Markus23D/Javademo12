@@ -1,20 +1,24 @@
-import os
 from skills.base import Skill
 
 
 class SystemSkill(Skill):
-    name = "system"
-    priority = 8
 
-    def can_handle(self, text):
-        return "shutdown" in text or "restart" in text
+    def can_handle(self, text: str) -> float:
+        score = 0.0
+        if "shutdown" in text:
+            score += 1.0
+        if "restart" in text:
+            score += 1.0
+        return min(score, 1.0)
 
-    def handle(self, text):
+    def handle(self, text, context):
+
+        confidence = self.can_handle(text)
 
         if "shutdown" in text:
-            return [("shutdown", None)]
+            return [("shutdown", None)], confidence
 
         if "restart" in text:
-            return [("restart", None)]
+            return [("restart", None)], confidence
 
-        return []
+        return [], 0.0
