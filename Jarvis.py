@@ -5,13 +5,12 @@ import queue
 import os
 import time
 import asyncio
-import tempfile
 import random
-
+import numpy as np
 import sounddevice as sd
 from vosk import Model, KaldiRecognizer
 import edge_tts
-
+import threading
 import pyautogui
 
 
@@ -59,6 +58,9 @@ responses = [
     "Done",
     "Right away",
     "Sure"
+    "didnt quite catch that"
+    "what was that sir"
+    "could you repeat that"
 ]
 
 
@@ -72,23 +74,23 @@ def natural_reply():
 
 def speak(text):
     print("Jarvis:", text)
-    asyncio.run(_speak(text))
+    threading.Thread(target=lambda: asyncio.run(_speak(text)), daemon=True).start()
 
 
 async def _speak(text):
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as f:
-        path = f.name
+    global audio
+    communicate = edge_tts.Communicate(text, VOICE)
 
-    comm = edge_tts.Communicate(text, VOICE)
-    await comm.save(path)
+    async for chunk in communicate.stream():
+        if chunk["type"] == "audio":
+            audio = np.frombuffer(chunk["data"], dtype=np.int16)
+            sd.play(audio, samplerate=24000)
+            sd.wait()
 
-    subprocess.run(
-        ["powershell", "-c", f'(New-Object Media.SoundPlayer "{path}").PlaySync();'],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL
-    )
+    # play instantly (no file)
+    sd.play(audio, samplerate=24000)
+    sd.wait()
 
-    os.remove(path)
 
 
 # =========================
@@ -110,7 +112,7 @@ stream = sd.RawInputStream(
 stream.start()
 
 print("Jarvis 4.4 online...")
-
+speak("Goodmorning sir")
 
 # =========================
 # LISTEN
@@ -170,7 +172,7 @@ def restart_pc():
 
 
 # =========================
-# 🧠 BRAIN (WORKFLOW PLANNER)
+#BRAIN (WORKFLOW PLANNER)
 # =========================
 
 def brain(text):
