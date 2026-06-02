@@ -1,28 +1,37 @@
+from core.brain import load_skills
+from core.brain import brain
+
+from core.context import context
+
+from core.executor import execute
+from skills.registry import SKILL_REGISTRY
+
 from voice.stt import listen
 from voice.tts import speak
-from core.brain import brain, load_skills
-from core.executor import execute
-from core.context import context
 
 
 load_skills()
 
-speak("What can i help you with sir")
+
+speak("What can i do for you sir")
 
 while True:
 
     text = listen()
-    print("Heard:", text)
 
     if not text:
         continue
 
-    plan = brain(text)
+    print("Heard:", text)
+
+    plan = brain(text, context)
 
     if not plan:
-        speak("I’m not sure what you mean")
+
+        speak("I didn't understand that")
+
         continue
 
     execute(plan)
 
-    context.update("last_command", text)
+    context.remember(text)

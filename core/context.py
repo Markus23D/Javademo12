@@ -1,15 +1,20 @@
 class Context:
+
     def __init__(self):
+
         self.last_app = None
-        self.last_action = None
-        self.last_query = None
         self.last_command = None
 
-    def update(self, key, value):
-        setattr(self, key, value)
+        self.history = []
 
-    def get(self, key):
-        return getattr(self, key, None)
+    def remember(self, command):
+
+        self.last_command = command
+
+        self.history.append(command)
+
+        if len(self.history) > 50:
+            self.history.pop(0)
 
 
 context = Context()

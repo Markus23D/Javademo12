@@ -1,44 +1,51 @@
-import importlib
 import os
+import importlib
 
-from core.context import context
+import confidence
 
-SKILLS = []
+from skills.registry import SKILL_REGISTRY
+
 
 
 def load_skills():
-    global SKILLS
 
-    for file in os.listdir("skills"):
-        if file.endswith(".py") and file not in ["__init__.py", "base.py"]:
+    skills_folder = "skills"
 
-            module = importlib.import_module(f"skills.{file[:-3]}")
+    for file in os.listdir(skills_folder):
 
-            for obj in dir(module):
-                cls = getattr(module, obj)
+        if not file.endswith(".py"):
+            continue
 
-                if hasattr(cls, "handle") and hasattr(cls, "can_handle"):
-                    try:
-                        SKILLS.append(cls())
-                    except:
-                        pass
+        if file.startswith("__"):
+            continue
+
+        if file in ["registry.py", "base.py"]:
+            continue
+
+        module_name = f"skills.{file[:-3]}"
+
+        importlib.import_module(module_name)
 
 
-def brain(text):
+def brain(text, context):
 
-    best_plan = None
-    best_confidence = 0.0
+    best_skill = None
+    best_confidence = 0
 
-    for skill in SKILLS:
+    for skill in SKILL_REGISTRY:
 
         confidence = skill.can_handle(text)
 
         if confidence > best_confidence:
 
-            plan, conf = skill.handle(text, context)
+            best_confidence = confidence
+            best_skill = skill
 
-            if conf > best_confidence:
-                best_plan = plan
-                best_confidence = conf
+    if best_skill:
 
-    return best_plan
+        plan, confidence = best_skill.handle(text, context)
+
+        return plan
+
+    return []
+

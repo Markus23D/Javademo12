@@ -1,16 +1,9 @@
 class Skill:
-    name = "base"
-    priority = 0
 
-    def can_handle(self, text: str) -> float:
-        """
-        Return confidence (0.0 → 1.0)
-        """
+    name = "base"
+
+    def can_handle(self, text):
         return 0.0
 
-    def handle(self, text: str, context):
-        """
-        Returns:
-            (plan, confidence)
-        """
-        return None, 0.0
+    def handle(self, text, context):
+        return [], 0.0
