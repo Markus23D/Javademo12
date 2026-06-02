@@ -17,6 +17,9 @@ class BrowserSkill(Skill):
         if "youtube" in text:
             score += 0.5
 
+        if"you too" in text:
+            score += 0.5
+
         return min(score, 1.0)
 
     def handle(self, text, context):
@@ -27,6 +30,9 @@ class BrowserSkill(Skill):
             plan.append(("open_app", "chrome"))
 
         if "youtube" in text:
+            plan.append(("open_url", "https://youtube.com"))
+
+        if "you too" in text:
             plan.append(("open_url", "https://youtube.com"))
 
         return plan, self.can_handle(text)

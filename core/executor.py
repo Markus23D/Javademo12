@@ -4,10 +4,13 @@ import subprocess
 import pyautogui
 import os
 
+from voice.tts import speak
+
 
 class Executor:
 
     def __init__(self):
+
         self.actions = {
             "wait": self.wait,
             "open_url": self.open_url,
@@ -23,6 +26,9 @@ class Executor:
     def execute(self, plan):
         if not plan:
             return
+
+        # 🔊 Jarvis response
+        speak("Certainly sir")
 
         for action, value in plan:
             print("EXEC:", action, value)

@@ -42,7 +42,7 @@ threading.Thread(target=voice_worker, daemon=True).start()
 
 
 # -----------------------
-# CORE TTS
+# CORE TTS ENGINE
 # -----------------------
 async def _speak(text: str):
     global is_speaking
@@ -52,7 +52,6 @@ async def _speak(text: str):
 
     audio_bytes = bytearray()
 
-    # STREAM COLLECTION (faster + safer than string concat)
     async for chunk in communicate.stream():
         if not is_speaking:
             return
@@ -60,12 +59,10 @@ async def _speak(text: str):
         if chunk["type"] == "audio":
             audio_bytes.extend(chunk["data"])
 
-    # decode in memory
     audio = AudioSegment.from_file(io.BytesIO(audio_bytes), format="mp3")
 
     samples = np.array(audio.get_array_of_samples(), dtype=np.int16)
 
-    # FORCE SAFE OUTPUT RATE
-    sd.play(samples, samplerate=audio.frame_rate, blocking=False)
+    sd.play(samples, samplerate=audio.frame_rate, blocking=True)
 
     is_speaking = False
