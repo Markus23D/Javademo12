@@ -7,7 +7,7 @@ from core.context import context
 
 load_skills()
 
-speak("Jarvis context engine online")
+speak("What can i help you with sir")
 
 while True:
 
