@@ -1,16 +1,17 @@
 import subprocess
 import webbrowser
-from datetime import datetime
-import queue
 import json
+import queue
 import os
+import time
 import asyncio
 import tempfile
-import re
 
 import sounddevice as sd
 from vosk import Model, KaldiRecognizer
 import edge_tts
+
+import pyautogui
 
 
 # =========================
@@ -20,37 +21,17 @@ import edge_tts
 VOICE = "en-GB-RyanNeural"
 WAKE_WORDS = ["jarvis", "hey jarvis", "hey"]
 
-MODEL_PATH = "vosk-model-small-en-us-0.15"
-
-model = Model(MODEL_PATH)
+model = Model("vosk-model-small-en-us-0.15")
 recognizer = KaldiRecognizer(model, 16000)
 
 audio_queue = queue.Queue()
 
-MEMORY_FILE = "jarvis_memory.json"
+pyautogui.FAILSAFE = True
+pyautogui.PAUSE = 0.4
 
 
 # =========================
-# MEMORY SYSTEM
-# =========================
-
-def load_memory():
-    if not os.path.exists(MEMORY_FILE):
-        return {}
-    with open(MEMORY_FILE, "r") as f:
-        return json.load(f)
-
-
-def save_memory(mem):
-    with open(MEMORY_FILE, "w") as f:
-        json.dump(mem, f, indent=2)
-
-
-memory = load_memory()
-
-
-# =========================
-# TTS (CLEAN + FAST)
+# TEXT TO SPEECH
 # =========================
 
 def speak(text):
@@ -92,7 +73,7 @@ stream = sd.RawInputStream(
 
 stream.start()
 
-print("Jarvis 2.0 online...")
+print("Jarvis 4.3 Workflow Mode online...")
 
 
 # =========================
@@ -118,85 +99,168 @@ def is_wake(text):
     return any(w in text for w in WAKE_WORDS)
 
 
-def clean_command(text):
+def clean(text):
     for w in WAKE_WORDS:
         text = text.replace(w, "")
     return text.strip()
 
 
 # =========================
-# NLP (LIGHTWEIGHT INTENT PARSER)
+# DESKTOP ACTIONS
 # =========================
 
-def parse_command(text):
-    """
-    Converts natural language into structured actions
-    """
+def type_text(text):
+    pyautogui.write(text, interval=0.05)
 
-    actions = []
 
-    # OPEN APP
-    if "open chrome" in text:
-        actions.append({"action": "open_app", "app": "chrome"})
+def click(x=None, y=None):
+    if x and y:
+        pyautogui.click(x, y)
+    else:
+        pyautogui.click()
 
-    if "open notepad" in text:
-        actions.append({"action": "open_app", "app": "notepad"})
 
-    if "open youtube" in text:
-        actions.append({"action": "open_url", "url": "https://youtube.com"})
-
-    # TIME
-    if "time" in text:
-        actions.append({"action": "tell_time"})
-
-    # WEB SEARCH STYLE COMMAND
-    search_match = re.search(r"search (for )?(.*)", text)
-    if search_match:
-        query = search_match.group(2)
-        actions.append({"action": "web_search", "query": query})
-
-    # MEMORY
-    if "remember" in text:
-        actions.append({"action": "remember", "text": text})
-
-    return actions
+def press(keys):
+    pyautogui.hotkey(*keys)
 
 
 # =========================
-# EXECUTION ENGINE
+# SYSTEM ACTIONS
 # =========================
 
-def run_action(action):
-    act = action["action"]
+def shutdown_pc():
+    os.system("shutdown /s /t 5")
 
-    if act == "open_app":
-        app = action["app"]
 
-        if app == "chrome":
-            speak("Opening Chrome")
-            subprocess.Popen(r"C:\Program Files\Google\Chrome\Application\chrome.exe")
+def restart_pc():
+    os.system("shutdown /r /t 5")
 
-        elif app == "notepad":
-            speak("Opening Notepad")
-            subprocess.Popen("notepad.exe")
 
-    elif act == "open_url":
-        speak("Opening website")
-        webbrowser.open(action["url"])
+# =========================
+# 🧠 BRAIN (WORKFLOW PLANNER)
+# =========================
 
-    elif act == "tell_time":
-        now = datetime.now().strftime("%I:%M %p")
-        speak(f"It is {now}")
+def brain(text):
+    text = text.lower()
 
-    elif act == "web_search":
-        speak(f"Searching for {action['query']}")
-        webbrowser.open(f"https://www.google.com/search?q={action['query']}")
+    # =========================
+    # YOUTUBE WORKFLOW MODE
+    # =========================
+    if "youtube" in text and "search" in text:
+        query = text.split("search")[-1].strip()
 
-    elif act == "remember":
-        key = str(len(memory))
-        memory[key] = action["text"]
-        save_memory(memory)
-        speak("I will remember that")
+        return [
+            {"action": "open_url", "value": "https://youtube.com"},
+            {"action": "wait", "value": 3},
+            {"action": "click_search"},
+            {"action": "type", "value": query},
+            {"action": "press", "value": ["enter"]}
+        ]
+
+    # =========================
+    # SIMPLE COMMANDS
+    # =========================
+    plan = []
+
+    if "chrome" in text:
+        plan.append(("open_app", "chrome"))
+
+    if "notepad" in text:
+        plan.append(("open_app", "notepad"))
+
+    if "youtube" in text and "search" not in text:
+        plan.append(("open_url", "https://youtube.com"))
+
+    if text.startswith("type "):
+        plan.append(("type", text.replace("type", "").strip()))
+
+    if "click" in text:
+        plan.append(("click", None))
+
+    if "shutdown" in text:
+        plan.append(("shutdown", None))
+
+    if "restart" in text:
+        plan.append(("restart", None))
+
+    return plan
+
+
+# =========================
+# ⚙️ WORKFLOW EXECUTOR
+# =========================
+
+def execute(plan):
+    for step in plan:
+
+        # -------------------------
+        # WORKFLOW STEPS (DICT)
+        # -------------------------
+        if isinstance(step, dict):
+
+            if step["action"] == "open_url":
+                speak("Opening website")
+                webbrowser.open(step["value"])
+
+            elif step["action"] == "wait":
+                time.sleep(step["value"])
+
+            elif step["action"] == "type":
+                speak("Typing")
+                type_text(step["value"])
+
+            elif step["action"] == "press":
+                pyautogui.hotkey(*step["value"])
+
+            elif step["action"] == "click_search":
+                speak("Clicking search bar")
+                pyautogui.click(800, 150)
+
+
+        # -------------------------
+        # LEGACY ACTIONS (TUPLES)
+        # -------------------------
+        else:
+            action, value = step
+
+            if action == "open_app":
+                if value == "chrome":
+                    speak("Opening Chrome")
+                    subprocess.Popen(r"C:\Program Files\Google\Chrome\Application\chrome.exe")
+
+                elif value == "notepad":
+                    speak("Opening Notepad")
+                    subprocess.Popen("notepad.exe")
+
+            elif action == "open_url":
+                speak("Opening website")
+                webbrowser.open(value)
+
+            elif action == "type":
+                speak("Typing")
+                type_text(value)
+
+            elif action == "click":
+                speak("Clicking")
+                click()
+
+            elif action == "shutdown":
+                speak("Are you sure you want to shutdown?")
+                confirm = listen()
+                if "yes" in confirm:
+                    speak("Shutting down")
+                    shutdown_pc()
+                else:
+                    speak("Cancelled")
+
+            elif action == "restart":
+                speak("Are you sure you want to restart?")
+                confirm = listen()
+                if "yes" in confirm:
+                    speak("Restarting")
+                    restart_pc()
+                else:
+                    speak("Cancelled")
 
 
 # =========================
@@ -216,22 +280,16 @@ while running:
     if not is_wake(heard):
         continue
 
-    command = clean_command(heard)
+    command = clean(heard)
 
     if not command:
         speak("Yes?")
         command = listen()
 
-    actions = parse_command(command)
+    plan = brain(command)
 
-    if not actions:
+    if not plan:
         speak("I didn't understand that")
         continue
 
-    for action in actions:
-        run_action(action)
-
-    # shutdown condition
-    if any("shutdown" in heard for _ in [1]):
-        speak("Goodbye")
-        running = False
+    execute(plan)
