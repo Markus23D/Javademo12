@@ -5,34 +5,58 @@ from skills.registry import skill
 @skill
 class BrowserSkill(Skill):
 
-    name = "browser"
+    def can_handle(self, text: str) -> float:
+        text = text.lower()
 
-    def can_handle(self, text):
-
-        score = 0
-
-        if "chrome" in text:
-            score += 0.5
-
+        # stronger intent detection (handles STT noise)
         if "youtube" in text:
-            score += 0.5
+            return 0.95
 
-        if"you too" in text:
-            score += 0.5
+        if "google" in text:
+            return 0.75
 
-        return min(score, 1.0)
+        chrome_keywords = [
+            "chrome",
+            "browser",
+            "open chrome",
+            "start chrome",
+            "launch chrome"
+        ]
 
-    def handle(self, text, context):
+        if any(k in text for k in chrome_keywords):
+            return 0.85
 
-        plan = []
+        # weak generic open intent fallback
+        if "open" in text and ("browse" in text or "internet" in text):
+            return 0.6
 
-        if "chrome" in text:
-            plan.append(("open_app", "chrome"))
+        return 0.0
 
+    def handle(self, text: str, context):
+
+        text = text.lower()
+
+        # YouTube
         if "youtube" in text:
-            plan.append(("open_url", "https://youtube.com"))
+            return (
+                [{"action": "open_url", "value": "https://youtube.com"}],
+                0.95
+            )
 
-        if "you too" in text:
-            plan.append(("open_url", "https://youtube.com"))
+        # Google
+        if "google" in text:
+            return (
+                [{"action": "open_url", "value": "https://google.com"}],
+                0.75
+            )
 
-        return plan, self.can_handle(text)
+        # Chrome / browser (MAIN FIX)
+        chrome_keywords = ["chrome", "browser", "open chrome", "start chrome", "launch chrome"]
+
+        if any(k in text for k in chrome_keywords):
+            return (
+                [{"action": "open_app", "value": "chrome"}],
+                0.85
+            )
+
+        return ([], 0.0)

@@ -1,15 +1,18 @@
+import json
 import time
 import webbrowser
-import subprocess
 import pyautogui
 import os
-
-from voice.tts import speak
 
 
 class Executor:
 
     def __init__(self):
+        base_dir = os.path.dirname(os.path.dirname(__file__))
+        apps_path = os.path.join(base_dir, "commands.json")
+
+        with open(apps_path, "r", encoding="utf-8") as f:
+            self.apps = json.load(f)
 
         self.actions = {
             "wait": self.wait,
@@ -21,48 +24,73 @@ class Executor:
         }
 
     # -----------------------
-    # MAIN ENTRY
+    # MAIN EXECUTION ENGINE
     # -----------------------
     def execute(self, plan):
+
         if not plan:
+            print("[EMPTY PLAN]")
             return
 
-        # 🔊 Jarvis response
-        speak("Certainly sir")
+        for step in plan:
 
-        for action, value in plan:
-            print("EXEC:", action, value)
+            action = step.get("action")
+            value = step.get("value")
 
-            handler = self.actions.get(action)
+            func = self.actions.get(action)
 
-            if handler:
-                try:
-                    handler(value)
-                except Exception as e:
-                    print(f"[EXEC ERROR] {action}: {e}")
-            else:
+            if not func:
                 print(f"[UNKNOWN ACTION] {action}")
+                continue
+
+            try:
+                func(value)
+            except Exception as e:
+                print(f"[EXECUTION ERROR] {action}: {e}")
 
     # -----------------------
     # ACTIONS
     # -----------------------
+
+    def open_app(self, value):
+        print("[OPEN_APP CALLED]", value)
+
+        key = value.lower().strip()
+        path = None
+
+        app = self.apps.get(key)
+
+        if isinstance(app, dict):
+            path = app.get("path")
+        else:
+            path = app
+
+        if not path:
+            for app_name, data in self.apps.items():
+
+                if isinstance(data, dict):
+                    aliases = data.get("aliases", [])
+
+                    if key in aliases or key in app_name:
+                        path = data.get("path")
+                        break
+
+        if not path:
+            print(f"[APP NOT FOUND] {value}")
+            return
+
+        print("[LAUNCHING]", path)
+
+        try:
+            os.startfile(path)
+        except Exception as e:
+            print(f"[ERROR OPENING APP] {value}: {e}")
+
     def wait(self, value):
         time.sleep(value)
 
     def open_url(self, value):
         webbrowser.open(value)
-
-    def open_app(self, value):
-        apps = {
-            "chrome": r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-        }
-
-        path = apps.get(value)
-
-        if path:
-            subprocess.Popen(path)
-        else:
-            print(f"[APP NOT FOUND] {value}")
 
     def youtube_search(self, value):
         query = value.replace(" ", "+")

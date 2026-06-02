@@ -1,3 +1,3 @@
-import sounddevice as sd
+import os
 
-print(sd.query_devices())
+os.startfile("C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe")

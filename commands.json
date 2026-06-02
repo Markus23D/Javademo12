@@ -1,0 +1,51 @@
+{
+  "chrome": {
+    "path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "aliases": ["browser", "google chrome", "open chrome"]
+  },
+
+  "zenless zone zero": {
+    "path": "C:\\Program Files\\HoYoPlay\\launcher.exe",
+    "aliases": ["zzz", "zenless", "hoYo game"]
+  },
+
+  "wuthering waves": {
+    "path": "C:\\Wuthering Waves\\Wuthering Waves Game\\Client\\Binaries\\Win64\\Client-Win64-Shipping.exe",
+    "aliases": ["wuwa", "waves", "wuthering"]
+  },
+
+  "league of legends": {
+    "path": "C:\\Riot Games\\League of Legends\\LeagueClient.exe",
+    "aliases": ["lol", "league", "riot game"]
+  },
+
+  "riot client": {
+    "path": "C:\\Riot Games\\Riot Client\\RiotClientServices.exe",
+    "aliases": ["riot", "riot launcher"]
+  },
+
+  "overwatch": {
+    "path": "C:\\Program Files (x86)\\Battle.net\\Battle.net Launcher.exe",
+    "aliases": ["ow", "overwatch 2"]
+  },
+
+  "world of warcraft": {
+    "path": "E:\\World of Warcraft\\World of Warcraft Launcher.exe",
+    "aliases": ["wow", "warcraft, world of warcraft"]
+  },
+
+  "thunderstore mod manager": {
+    "path": "C:\\Users\\marku\\AppData\\Local\\Programs\\thunderstore-mod-manager\\Thunderstore Mod Manager.exe",
+    "aliases": ["mod manager", "thunderstore"]
+  },
+
+  "subnautica 2": {
+    "path": "steam://rungameid/XXXXXX",
+    "aliases": ["subnautica", "subnautica two"]
+  },
+
+  "neverness to everness": {
+    "path": "G:\\neverness to everness\\NTEGlobalLauncher.exe",
+    "aliases": ["nte", "neverness", "everness"]
+  }
+}

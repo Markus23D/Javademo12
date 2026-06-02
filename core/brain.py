@@ -20,10 +20,34 @@ def load_skills():
         importlib.import_module(module_name)
 
 
+def normalize_step(step):
+    """
+    Ensures every skill returns a clean dict format:
+    {"action": "...", "value": "..."}
+    """
+
+    if isinstance(step, tuple):
+        return {
+            "action": step[0],
+            "value": step[1]
+        }
+
+    if isinstance(step, dict):
+        return {
+            "action": step.get("action"),
+            "value": step.get("value")
+        }
+
+    return None
+
+
 def brain(text, context):
     best_skill = None
     best_score = 0.0
 
+    # -----------------------
+    # PICK BEST SKILL
+    # -----------------------
     for skill in SKILL_REGISTRY:
         score = skill.can_handle(text)
 
@@ -31,17 +55,33 @@ def brain(text, context):
             best_score = score
             best_skill = skill
 
-    if best_skill and best_score >= MIN_CONFIDENCE:
-        plan, score = best_skill.handle(text, context)
-
+    # -----------------------
+    # NO MATCH
+    # -----------------------
+    if not best_skill or best_score < MIN_CONFIDENCE:
         return {
-            "skill": best_skill.__class__.__name__,
-            "confidence": score,
-            "plan": plan
+            "skill": None,
+            "confidence": 0.0,
+            "plan": None
         }
 
+    # -----------------------
+    # EXECUTE SKILL
+    # -----------------------
+    plan, score = best_skill.handle(text, context)
+
+    # -----------------------
+    # NORMALIZE PLAN
+    # -----------------------
+    fixed_plan = []
+
+    for step in plan:
+        normalized = normalize_step(step)
+        if normalized:
+            fixed_plan.append(normalized)
+
     return {
-        "skill": None,
-        "confidence": 0.0,
-        "plan": None
+        "skill": best_skill.__class__.__name__,
+        "confidence": score,
+        "plan": fixed_plan
     }
