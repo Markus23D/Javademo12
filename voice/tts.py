@@ -52,17 +52,24 @@ async def _speak(text: str):
 
     audio_bytes = bytearray()
 
-    async for chunk in communicate.stream():
-        if not is_speaking:
+    try:
+        async for chunk in communicate.stream():
+            if not is_speaking:
+                break
+
+            if chunk["type"] == "audio":
+                audio_bytes.extend(chunk["data"])
+
+        if not audio_bytes:
             return
 
-        if chunk["type"] == "audio":
-            audio_bytes.extend(chunk["data"])
+        audio = AudioSegment.from_file(io.BytesIO(audio_bytes), format="mp3")
+        samples = np.array(audio.get_array_of_samples(), dtype=np.int16)
 
-    audio = AudioSegment.from_file(io.BytesIO(audio_bytes), format="mp3")
+        sd.play(samples, samplerate=audio.frame_rate, blocking=True)
 
-    samples = np.array(audio.get_array_of_samples(), dtype=np.int16)
+    except Exception as e:
+        print("[TTS ERROR]", e)
 
-    sd.play(samples, samplerate=audio.frame_rate, blocking=True)
-
-    is_speaking = False
+    finally:
+        is_speaking = False

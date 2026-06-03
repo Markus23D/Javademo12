@@ -12,7 +12,7 @@ from core.intent import detect_intent
 from core.dialogue import DialogueManager
 from core.memory import memory, update_memory
 from core.skills_loader import load_skills
-
+from core.normalizer import Normalizer
 from voice.audio_bus import AudioBus
 from voice.stt import STT
 from voice.tts import speak, stop
@@ -55,8 +55,9 @@ class MainWindow(QWidget):
         self.bus = AudioBus()
         self.context = Context()
         self.dialogue = DialogueManager()
-        self.executor = Executor()
+        self.executor = Executor(self.context)
         self.stt = STT(self.bus)
+
 
         threading.Thread(target=self.run_stt, daemon=True).start()
 
@@ -123,10 +124,16 @@ class MainWindow(QWidget):
     def poll_stt(self):
         text = self.bus.get_stt()
 
+
         if not text:
             return
 
         print("[MAIN RECEIVED]", text)
+        raw_text = text
+        text = Normalizer.clean(text)
+
+        if raw_text != text:
+            print(f"[NORMALIZED] {raw_text} -> {text}")
 
         if self.mode == "standby":
             if "jarvis" in text.lower():

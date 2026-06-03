@@ -31,7 +31,7 @@
 
   "open spotify": {
     "type": "app",
-    "path": "C:\\Users\\%USERNAME%\\AppData\\Roaming\\Spotify\\Spotify.exe",
+    "path": "spotify:",
     "aliases": ["music", "spotify"]
   },
 
