@@ -1,50 +1,97 @@
 {
-  "chrome": {
+  "open chrome": {
+    "type": "app",
     "path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-    "aliases": ["browser", "google chrome", "open chrome"]
+    "aliases": ["chrome", "browser", "google chrome"]
+  },
+
+  "youtube": {
+    "type": "web",
+    "url": "https://www.youtube.com",
+    "aliases": ["youtube", "yt", "watch videos", "you too"]
+  },
+
+  "open discord": {
+    "type": "app",
+    "path": "C:\\Users\\%USERNAME%\\AppData\\Local\\Discord\\Update.exe --processStart Discord.exe",
+    "aliases": ["discord", "chat app"]
+  },
+
+  "open google": {
+    "type": "web",
+    "url": "https://www.google.com",
+    "aliases": ["google search", "search"]
+  },
+
+  "open github": {
+    "type": "web",
+    "url": "https://github.com",
+    "aliases": ["github", "code hub"]
+  },
+
+  "open spotify": {
+    "type": "app",
+    "path": "C:\\Users\\%USERNAME%\\AppData\\Roaming\\Spotify\\Spotify.exe",
+    "aliases": ["music", "spotify"]
+  },
+
+  "open netflix": {
+    "type": "web",
+    "url": "https://www.netflix.com",
+    "aliases": ["netflix", "movies"]
+  },
+
+  "chrome": {
+    "type": "app",
+    "path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "aliases": ["browser", "google chrome"]
   },
 
   "zenless zone zero": {
+    "type": "app",
     "path": "C:\\Program Files\\HoYoPlay\\launcher.exe",
-    "aliases": ["zzz", "zenless", "hoYo game"]
+    "aliases": ["zzz", "zenless", "hoyo game"]
   },
 
   "wuthering waves": {
+    "type": "app",
     "path": "C:\\Wuthering Waves\\Wuthering Waves Game\\Client\\Binaries\\Win64\\Client-Win64-Shipping.exe",
     "aliases": ["wuwa", "waves", "wuthering"]
   },
 
   "league of legends": {
+    "type": "app",
     "path": "C:\\Riot Games\\League of Legends\\LeagueClient.exe",
     "aliases": ["lol", "league", "riot game"]
   },
 
   "riot client": {
+    "type": "app",
     "path": "C:\\Riot Games\\Riot Client\\RiotClientServices.exe",
     "aliases": ["riot", "riot launcher"]
   },
 
   "overwatch": {
+    "type": "app",
     "path": "C:\\Program Files (x86)\\Battle.net\\Battle.net Launcher.exe",
     "aliases": ["ow", "overwatch 2"]
   },
 
   "world of warcraft": {
+    "type": "app",
     "path": "E:\\World of Warcraft\\World of Warcraft Launcher.exe",
-    "aliases": ["wow", "warcraft, world of warcraft"]
+    "aliases": ["wow", "warcraft"]
   },
 
   "thunderstore mod manager": {
+    "type": "app",
     "path": "C:\\Users\\marku\\AppData\\Local\\Programs\\thunderstore-mod-manager\\Thunderstore Mod Manager.exe",
     "aliases": ["mod manager", "thunderstore"]
   },
 
-  "subnautica 2": {
-    "path": "steam://rungameid/XXXXXX",
-    "aliases": ["subnautica", "subnautica two"]
-  },
 
   "neverness to everness": {
+    "type": "app",
     "path": "G:\\neverness to everness\\NTEGlobalLauncher.exe",
     "aliases": ["nte", "neverness", "everness"]
   }

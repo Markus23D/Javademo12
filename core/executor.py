@@ -30,74 +30,37 @@ class Executor:
 
         if not plan:
             print("[EMPTY PLAN]")
-            return
 
-        for step in plan:
+            if isinstance(data, dict):
+                aliases = data.get("aliases", [])
 
-            action = step.get("action")
-            value = step.get("value")
+                if key in aliases or key in app_name:
+                    path = data.get("path")
+                    break
 
-            func = self.actions.get(action)
+    if not os.path:
+        print(f"[APP NOT FOUND] {value}")
+        return
 
-            if not func:
-                print(f"[UNKNOWN ACTION] {action}")
-                continue
+    print("[LAUNCHING]", os.path)
 
-            try:
-                func(value)
-            except Exception as e:
-                print(f"[EXECUTION ERROR] {action}: {e}")
+    try:
+        os.startfile(os.path)
+    except Exception as e:
+        print(f"[ERROR OPENING APP] {value}: {e}")
 
-    # -----------------------
-    # ACTIONS
-    # -----------------------
+def wait(self, value):
+    time.sleep(value)
 
-    def open_app(self, value):
-        print("[OPEN_APP CALLED]", value)
+def open_url(self, value):
+    webbrowser.open(value)
 
-        key = value.lower().strip()
-        path = None
+def youtube_search(self, value):
+    query = value.replace(" ", "+")
+    webbrowser.open(f"https://youtube.com/results?search_query={query}")
 
-        app = self.apps.get(key)
+def type_text(self, value):
+    pyautogui.write(value)
 
-        if isinstance(app, dict):
-            path = app.get("path")
-        else:
-            path = app
-
-        if not path:
-            for app_name, data in self.apps.items():
-
-                if isinstance(data, dict):
-                    aliases = data.get("aliases", [])
-
-                    if key in aliases or key in app_name:
-                        path = data.get("path")
-                        break
-
-        if not path:
-            print(f"[APP NOT FOUND] {value}")
-            return
-
-        print("[LAUNCHING]", path)
-
-        try:
-            os.startfile(path)
-        except Exception as e:
-            print(f"[ERROR OPENING APP] {value}: {e}")
-
-    def wait(self, value):
-        time.sleep(value)
-
-    def open_url(self, value):
-        webbrowser.open(value)
-
-    def youtube_search(self, value):
-        query = value.replace(" ", "+")
-        webbrowser.open(f"https://youtube.com/results?search_query={query}")
-
-    def type_text(self, value):
-        pyautogui.write(value)
-
-    def shutdown(self, value=None):
-        os.system("shutdown /s /t 5")
+def shutdown(self, value=None):
+    os.system("shutdown /s /t 5")

@@ -1,32 +1,38 @@
 from queue import Queue
-import threading
+
 
 class AudioBus:
+
     def __init__(self):
         self.stt_queue = Queue()
         self.tts_queue = Queue()
-        self.stop_signal = False
 
-    # -----------------------
-    # STT OUTPUT → brain input
-    # -----------------------
-    def push_stt(self, text: str):
+    # STT INPUT
+    def push_stt(self, text):
+        print("[BUS] push_stt →", text)
         self.stt_queue.put(text)
 
     def get_stt(self):
-        return self.stt_queue.get()
+        if self.stt_queue.empty():
+            return None
+        text = self.stt_queue.get()
+        print("[BUS] get_stt →", text)
+        return text
 
     # -----------------------
-    # brain → TTS output
+    # TTS
     # -----------------------
     def push_tts(self, text: str):
+        print(f"[BUS] push_tts → {text}")  # 🔥 DEBUG
         self.tts_queue.put(text)
 
     def get_tts(self):
+        if self.tts_queue.empty():
+            return None
         return self.tts_queue.get()
 
     # -----------------------
-    # interrupt system
+    # STOP
     # -----------------------
     def stop_speaking(self):
         self.stop_signal = True

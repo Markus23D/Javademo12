@@ -1,87 +1,85 @@
-import importlib
-import os
-from skills.registry import SKILL_REGISTRY
+from core.intent import detect_intent
 
-MIN_CONFIDENCE = 0.35
+def brain(text, context, memory, dialogue):
 
+    text = text.lower().strip()
+    intent = detect_intent(text)
 
-def load_skills():
-    skills_folder = "skills"
+    print("[INTENT]", intent)
 
-    for file in os.listdir(skills_folder):
-        if not file.endswith(".py"):
-            continue
-        if file.startswith("__"):
-            continue
-        if file in ["registry.py", "base.py"]:
-            continue
+    # -----------------------
+    # STANDBY STATE
+    # -----------------------
+    if intent == "standby":
+        dialogue.set_state("standby")
 
-        module_name = f"skills.{file[:-3]}"
-        importlib.import_module(module_name)
-
-
-def normalize_step(step):
-    """
-    Ensures every skill returns a clean dict format:
-    {"action": "...", "value": "..."}
-    """
-
-    if isinstance(step, tuple):
         return {
-            "action": step[0],
-            "value": step[1]
+            "skill": "system",
+            "confidence": 1.0,
+            "plan": [
+                {"action": "standby", "value": None}
+            ]
         }
 
-    if isinstance(step, dict):
+    # -----------------------
+    # CHAT MODE
+    # -----------------------
+    if intent == "chat":
+
         return {
-            "action": step.get("action"),
-            "value": step.get("value")
+            "skill": "chat",
+            "confidence": 1.0,
+            "plan": [
+                {"action": "speak", "value": "I'm here sir."}
+            ]
         }
 
-    return None
+    # -----------------------
+    # YOUTUBE MODE (no skills needed anymore)
+    # -----------------------
+    if intent == "youtube":
 
+        return {
+            "skill": "youtube",
+            "confidence": 1.0,
+            "plan": [
+                {"action": "open_url", "value": "https://youtube.com"}
+            ]
+        }
 
-def brain(text, context):
+    # -----------------------
+    # FALLBACK → skills system
+    # -----------------------
     best_skill = None
     best_score = 0.0
+    best_plan = []
 
-    # -----------------------
-    # PICK BEST SKILL
-    # -----------------------
     for skill in SKILL_REGISTRY:
+
         score = skill.can_handle(text)
 
-        if score > best_score:
-            best_score = score
-            best_skill = skill
+        if score < 0.45:
+            continue
 
-    # -----------------------
-    # NO MATCH
-    # -----------------------
-    if not best_skill or best_score < MIN_CONFIDENCE:
+        if score <= best_score:
+            continue
+
+        plan, _ = skill.handle(text, context)
+
+        if plan:
+            best_skill = skill
+            best_score = score
+            best_plan = plan
+
+    if not best_skill:
         return {
             "skill": None,
             "confidence": 0.0,
-            "plan": None
+            "plan": []
         }
-
-    # -----------------------
-    # EXECUTE SKILL
-    # -----------------------
-    plan, score = best_skill.handle(text, context)
-
-    # -----------------------
-    # NORMALIZE PLAN
-    # -----------------------
-    fixed_plan = []
-
-    for step in plan:
-        normalized = normalize_step(step)
-        if normalized:
-            fixed_plan.append(normalized)
 
     return {
         "skill": best_skill.__class__.__name__,
-        "confidence": score,
-        "plan": fixed_plan
+        "confidence": best_score,
+        "plan": best_plan
     }

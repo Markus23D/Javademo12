@@ -5,16 +5,39 @@ from skills.registry import skill
 @skill
 class BrowserSkill(Skill):
 
-    def can_handle(self, text: str) -> float:
-        text = text.lower()
+    def _normalize(self, text: str) -> str:
+        return text.lower().strip()
 
-        # stronger intent detection (handles STT noise)
-        if "youtube" in text:
+    def can_handle(self, text: str) -> float:
+
+        text = self._normalize(text)
+
+        # -----------------------
+        # YOUTUBE INTENT (FIXED)
+        # -----------------------
+        youtube_triggers = [
+            "youtube",
+            "watch videos",
+            "play videos",
+            "show videos",
+            "video",
+            "yt",
+            "you too",
+            "you tube"
+        ]
+
+        if any(t in text for t in youtube_triggers):
             return 0.95
 
-        if "google" in text:
+        # -----------------------
+        # GOOGLE
+        # -----------------------
+        if "google" in text or "search" in text:
             return 0.75
 
+        # -----------------------
+        # CHROME / BROWSER
+        # -----------------------
         chrome_keywords = [
             "chrome",
             "browser",
@@ -26,32 +49,49 @@ class BrowserSkill(Skill):
         if any(k in text for k in chrome_keywords):
             return 0.85
 
-        # weak generic open intent fallback
-        if "open" in text and ("browse" in text or "internet" in text):
+        # -----------------------
+        # WEAK GENERIC FALLBACK
+        # -----------------------
+        if "open" in text and any(w in text for w in ["internet", "browse", "web"]):
             return 0.6
 
         return 0.0
 
     def handle(self, text: str, context):
 
-        text = text.lower()
+        text = self._normalize(text)
 
-        # YouTube
-        if "youtube" in text:
+        # -----------------------
+        # YOUTUBE
+        # -----------------------
+        if any(t in text for t in [
+            "youtube",
+            "watch videos",
+            "play videos",
+            "show videos",
+            "video",
+            "yt",
+            "you too",
+            "you tube"
+        ]):
             return (
                 [{"action": "open_url", "value": "https://youtube.com"}],
                 0.95
             )
 
-        # Google
-        if "google" in text:
+        # -----------------------
+        # GOOGLE
+        # -----------------------
+        if "google" in text or "search" in text:
             return (
                 [{"action": "open_url", "value": "https://google.com"}],
                 0.75
             )
 
-        # Chrome / browser (MAIN FIX)
-        chrome_keywords = ["chrome", "browser", "open chrome", "start chrome", "launch chrome"]
+        # -----------------------
+        # CHROME
+        # -----------------------
+        chrome_keywords = ["chrome", "browser"]
 
         if any(k in text for k in chrome_keywords):
             return (

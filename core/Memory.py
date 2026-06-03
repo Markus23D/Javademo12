@@ -1,15 +1,20 @@
 memory = {
     "history": [],
+    "last_intent": None,
     "last_command": None,
-    "last_plan": None
+    "last_response": None
 }
 
+def update_memory(text, intent, plan):
+    memory["last_command"] = text
+    memory["last_intent"] = intent
+    memory["last_response"] = plan
 
-MAX_HISTORY = 5
+    memory["history"].append({
+        "text": text,
+        "intent": intent,
+        "plan": plan
+    })
 
-
-def update_memory(command, plan):
-    memory["history"].append((command, plan))
-
-    if len(memory["history"]) > MAX_HISTORY:
-        memory["history"] = memory["history"][-MAX_HISTORY:]
+    if len(memory["history"]) > 20:
+        memory["history"] = memory["history"][-20:]
