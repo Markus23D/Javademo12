@@ -58,20 +58,10 @@ def brain(text, context, memory, dialogue):
             ]
         }
 
-    # -----------------------
-    # STANDBY
-    # -----------------------
-    if intent == "standby":
-        return {
-            "skill": "system",
-            "confidence": 1.0,
-            "plan": [
-                {"action": "standby", "value": None}
-            ]
-        }
+    # NOTE: standby is handled by SystemSkill (score 1.0) via the skills loop below.
 
     # -----------------------
-    # DANGEROUS SYSTEM COMMANDS
+    # DANGEROUS SYSTEM COMMANDS (shutdown/restart need confirmation)
     # -----------------------
     if intent == "system":
         dangerous_plan = Planner.build_plan(text)
@@ -168,16 +158,20 @@ def brain(text, context, memory, dialogue):
     # MULTI-COMMAND PLANNER
     # Must happen before skills.
     # Example: open chrome and search facebook
+    # Only route here when the split actually yields multiple commands.
     # -----------------------
     if " and " in text or " then " in text or "," in text:
-        plan = Planner.build_plan(text)
+        parts = Planner.split_command(text)
 
-        if plan:
-            return {
-                "skill": "planner",
-                "confidence": 1.0,
-                "plan": plan
-            }
+        if len(parts) > 1:
+            plan = Planner.build_plan(text)
+
+            if plan:
+                return {
+                    "skill": "planner",
+                    "confidence": 1.0,
+                    "plan": plan
+                }
 
     # -----------------------
     # SKILLS SYSTEM

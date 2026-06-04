@@ -54,8 +54,10 @@ class Normalizer:
         "normalizer_memory.json"
     )
 
+    _memory_cache: dict = None  # cached learned replacements
+
     @classmethod
-    def load_memory(cls):
+    def load_memory(cls) -> dict:
         if not os.path.exists(cls.FILE_PATH):
             return {}
 
@@ -66,28 +68,36 @@ class Normalizer:
             return {}
 
     @classmethod
-    def save_memory(cls, data):
+    def _get_memory(cls) -> dict:
+        """Return cached learned memory, loading from disk on first access."""
+        if cls._memory_cache is None:
+            cls._memory_cache = cls.load_memory()
+        return cls._memory_cache
+
+    @classmethod
+    def save_memory(cls, data: dict):
         with open(cls.FILE_PATH, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)
 
     @classmethod
-    def learn(cls, wrong, correct):
+    def learn(cls, wrong: str, correct: str):
         wrong = wrong.lower().strip()
         correct = correct.lower().strip()
 
-        memory = cls.load_memory()
+        memory = cls._get_memory()
         memory[wrong] = correct
+        cls._memory_cache = memory  # update cache
         cls.save_memory(memory)
 
         print(f"[NORMALIZER LEARNED] {wrong} -> {correct}")
 
     @classmethod
-    def clean(cls, text):
+    def clean(cls, text: str) -> str:
         text = text.lower().strip()
 
         replacements = {}
         replacements.update(cls.DEFAULT_REPLACEMENTS)
-        replacements.update(cls.load_memory())
+        replacements.update(cls._get_memory())
 
         for wrong, correct in replacements.items():
             text = text.replace(wrong, correct)

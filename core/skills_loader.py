@@ -3,11 +3,12 @@ import os
 
 from skills.registry import SKILL_REGISTRY
 
+# Absolute path to the skills folder — works regardless of working directory
+_SKILLS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "skills")
+
 
 def load_skills():
-    skills_folder = "skills"
-
-    for file in os.listdir(skills_folder):
+    for file in os.listdir(_SKILLS_DIR):
         if not file.endswith(".py"):
             continue
         if file.startswith("__"):

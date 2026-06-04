@@ -30,7 +30,7 @@ J.A.R.V.I.S:
                     "prompt": prompt,
                     "stream": False
                 },
-                timeout=60
+                timeout=10
             )
 
             data = response.json()

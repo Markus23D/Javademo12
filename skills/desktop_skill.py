@@ -57,21 +57,7 @@ class DesktopSkill(Skill):
             app = text.replace("switch to ", "", 1).strip()
 
             return [
-                 {"action": "switch_window", "value": app}
-    ], 0.95
-        if "switch to chrome" in text:
-            return [
-                {"action": "switch_window", "value": "chrome"}
-            ], 0.95
-
-        if "switch to discord" in text:
-            return [
-                {"action": "switch_window", "value": "discord"}
-            ], 0.95
-
-        if "switch to spotify" in text:
-            return [
-                {"action": "switch_window", "value": "spotify"}
+                {"action": "switch_window", "value": app}
             ], 0.95
 
         # -----------------------
@@ -101,5 +87,3 @@ class DesktopSkill(Skill):
 
 
         return [], 0.0
-
-

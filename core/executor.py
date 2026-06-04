@@ -4,6 +4,7 @@ import webbrowser
 import pyautogui
 import os
 import subprocess
+from urllib.parse import quote_plus
 import pygetwindow as gw
 
 
@@ -68,17 +69,33 @@ class Executor:
 
     def open_app(self, value):
         key = value.lower().strip()
-        path = None
+        matched = None
 
         for app_name, data in self.apps.items():
             aliases = [a.lower() for a in data.get("aliases", [])]
 
             if key == app_name.lower() or key in aliases:
-                path = os.path.expandvars(data.get("path"))
+                matched = data
                 break
 
-        if not path:
+        if not matched:
             print(f"[APP NOT FOUND] {value}")
+            return
+
+        # Web-type entries open a URL in the browser
+        if matched.get("type") == "web":
+            url = matched.get("url")
+            if url:
+                print(f"[OPENING URL] {url}")
+                webbrowser.open(url)
+                if self.context:
+                    self.context.set_active_app(value)
+            return
+
+        # App-type entries launch an executable
+        path = os.path.expandvars(matched.get("path", ""))
+        if not path:
+            print(f"[APP NO PATH] {value}")
             return
 
         print("[LAUNCHING]", path)
@@ -115,7 +132,7 @@ class Executor:
     def youtube_search(self, value):
         query = self.get_media_query(value)
 
-        url = f"https://youtube.com/results?search_query={query.replace(' ', '+')}"
+        url = f"https://youtube.com/results?search_query={quote_plus(query)}"
         webbrowser.open(url)
 
         if self.context:
@@ -126,7 +143,7 @@ class Executor:
 
         print(f"[SPOTIFY SEARCH] {query}")
 
-        os.startfile(f"spotify:search:{query.replace(' ', '%20')}")
+        os.startfile(f"spotify:search:{quote_plus(query)}")
         time.sleep(2)
 
         if self.context:
@@ -137,12 +154,12 @@ class Executor:
 
         print(f"[PLAY SPOTIFY] {query}")
 
-        os.startfile(f"spotify:search:{query.replace(' ', '%20')}")
+        os.startfile(f"spotify:search:{quote_plus(query)}")
         time.sleep(3)
 
-        pyautogui.click(470, 390)
-        time.sleep(0.5)
-
+        # Use keyboard navigation instead of hardcoded pixel coords
+        pyautogui.press("tab")
+        time.sleep(0.3)
         pyautogui.press("enter")
 
         if self.context:
@@ -153,12 +170,15 @@ class Executor:
 
         print(f"[PLAY YOUTUBE] {query}")
 
-        url = f"https://www.youtube.com/results?search_query={query.replace(' ', '+')}"
+        url = f"https://www.youtube.com/results?search_query={quote_plus(query)}"
         webbrowser.open(url)
 
         time.sleep(5)
 
-        pyautogui.click(620, 360)
+        # Use keyboard navigation instead of hardcoded pixel coords
+        pyautogui.press("tab")
+        time.sleep(0.3)
+        pyautogui.press("enter")
 
         if self.context:
             self.context.set_search("youtube", query)
@@ -179,7 +199,9 @@ class Executor:
         print("[EXECUTOR] standby handled by UI")
 
     def speak_action(self, value):
+        from voice.tts import speak
         print("[SPEAK ACTION]", value)
+        speak(value or "")
 
     def scroll(self, value):
         pyautogui.scroll(value or 0)
@@ -264,7 +286,7 @@ class Executor:
             self.spotify_search(last)
 
         else:
-            webbrowser.open(f"https://www.google.com/search?q={last.replace(' ', '+')}")
+            webbrowser.open(f"https://www.google.com/search?q={quote_plus(last)}")
 
     def switch_back(self, value=None):
         if not self.context:

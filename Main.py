@@ -1,7 +1,10 @@
 import sys
+from dotenv import load_dotenv
 from PySide6.QtWidgets import QApplication
 
 from ui.main_window import MainWindow
+
+load_dotenv()
 
 
 def main():

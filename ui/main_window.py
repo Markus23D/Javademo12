@@ -8,14 +8,13 @@ from ui.widgets.OrbWidget import OrbWidget
 from core.brain import brain
 from core.context import Context
 from core.executor import Executor
-from core.intent import detect_intent
 from core.dialogue import DialogueManager
 from core.memory import memory, update_memory
 from core.skills_loader import load_skills
 from core.normalizer import Normalizer
 from voice.audio_bus import AudioBus
 from voice.stt import STT
-from voice.tts import speak, stop
+from voice.tts import speak, stop, start_tts_worker
 
 
 class MainWindow(QWidget):
@@ -50,6 +49,7 @@ class MainWindow(QWidget):
 
         self.mode = "active"
 
+        start_tts_worker()
         load_skills()
 
         self.bus = AudioBus()
@@ -96,30 +96,9 @@ class MainWindow(QWidget):
             return
 
         for step in plan:
-            action = step.get("action")
-            value = step.get("value")
-
-            if action == "open_app":
-                speak(f"Certainly sir, opening {value}")
-
-            elif action == "open_url":
-                speak("Opening it now sir")
-
-            elif action == "shutdown":
-                speak("Shutting down system")
-
-            elif action == "type":
-                speak("Typing now sir")
-
-            elif action == "standby":
+            if step.get("action") == "standby":
                 speak("Going idle sir")
                 QTimer.singleShot(2000, self.enter_standby_mode)
-
-            elif action == "speak":
-                speak(value)
-
-            else:
-                speak("Done sir")
 
     def poll_stt(self):
         text = self.bus.get_stt()
@@ -142,18 +121,25 @@ class MainWindow(QWidget):
                 print("[IGNORED - STANDBY MODE]")
             return
 
+        for prefix in ["hey jarvis ", "ok jarvis ", "jarvis "]:
+            if text.lower().startswith(prefix):
+                text = text[len(prefix):]
+                break
+
         self.status.setText(text)
 
         stop()
 
-        intent = detect_intent(text)
+        threading.Thread(target=self._process, args=(text,), daemon=True).start()
 
+    def _process(self, text):
         result = brain(text, self.context, memory, self.dialogue)
         plan = result.get("plan", [])
+        intent = result.get("skill", "unknown")
 
         update_memory(text, intent, plan)
 
-        print("[INTENT]", intent)
+        print("[SKILL]", intent)
         print("[BRAIN RESULT]", result)
         print("[PLAN]", plan)
 
@@ -161,5 +147,6 @@ class MainWindow(QWidget):
 
         if plan:
             print("[EXECUTING PLAN]")
-            self.executor.execute(plan)
+            executable_plan = [step for step in plan if step.get("action") != "speak"]
+            self.executor.execute(executable_plan)
             self.context.remember(text)

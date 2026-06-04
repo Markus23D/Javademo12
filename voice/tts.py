@@ -7,7 +7,7 @@ from pydub import AudioSegment
 import threading
 import queue
 
-VOICE = "en-GB-RyanNeural"
+from config import VOICE
 
 speech_queue = queue.Queue()
 is_speaking = False
@@ -38,7 +38,15 @@ def voice_worker():
             print("[TTS ERROR]", e)
 
 
-threading.Thread(target=voice_worker, daemon=True).start()
+_worker_started = False
+
+
+def start_tts_worker():
+    """Start the TTS background thread. Call once from application startup."""
+    global _worker_started
+    if not _worker_started:
+        threading.Thread(target=voice_worker, daemon=True).start()
+        _worker_started = True
 
 
 # -----------------------

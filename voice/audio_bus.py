@@ -7,8 +7,10 @@ class AudioBus:
         self.stt_queue = Queue()
         self.tts_queue = Queue()
 
+    # -----------------------
     # STT INPUT
-    def push_stt(self, text):
+    # -----------------------
+    def push_stt(self, text: str):
         print("[BUS] push_stt →", text)
         self.stt_queue.put(text)
 
@@ -23,19 +25,10 @@ class AudioBus:
     # TTS
     # -----------------------
     def push_tts(self, text: str):
-        print(f"[BUS] push_tts → {text}")  # 🔥 DEBUG
+        print(f"[BUS] push_tts → {text}")
         self.tts_queue.put(text)
 
     def get_tts(self):
         if self.tts_queue.empty():
             return None
         return self.tts_queue.get()
-
-    # -----------------------
-    # STOP
-    # -----------------------
-    def stop_speaking(self):
-        self.stop_signal = True
-
-    def reset_stop(self):
-        self.stop_signal = False

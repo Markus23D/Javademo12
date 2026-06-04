@@ -1,3 +1,6 @@
+from urllib.parse import quote_plus
+
+
 class Planner:
 
     SEPARATORS = [" and ", " then ", ","]
@@ -23,7 +26,7 @@ class Planner:
 
     @classmethod
     def google_search_url(cls, query):
-        return f"https://www.google.com/search?q={query.replace(' ', '+')}"
+        return f"https://www.google.com/search?q={quote_plus(query)}"
 
     @classmethod
     def build_plan(cls, text):
@@ -33,6 +36,10 @@ class Planner:
             part = part.lower().strip()
 
             if part.startswith("type "):
+                steps.append({
+                    "action": "speak",
+                    "value": "Typing now sir"
+                })
                 steps.append({
                     "action": "type",
                     "value": part.replace("type ", "", 1).strip()
@@ -64,10 +71,18 @@ class Planner:
 
                 if platform == "youtube":
                     steps.append({
+                        "action": "speak",
+                        "value": f"Playing {value.get('song', '')} on YouTube sir"
+                    })
+                    steps.append({
                         "action": "play_youtube",
                         "value": value
                     })
                 else:
+                    steps.append({
+                        "action": "speak",
+                        "value": f"Playing {value.get('song', '')} on Spotify sir"
+                    })
                     steps.append({
                         "action": "play_song",
                         "value": value
@@ -75,66 +90,48 @@ class Planner:
 
             elif part.startswith("search youtube for "):
                 query = part.replace("search youtube for ", "", 1).strip()
-                steps.append({
-                    "action": "youtube_search",
-                    "value": query
-                })
+                steps.append({"action": "speak", "value": f"Searching YouTube for {query} sir"})
+                steps.append({"action": "youtube_search", "value": query})
 
             elif part.startswith("search youtube "):
                 query = part.replace("search youtube ", "", 1).strip()
-                steps.append({
-                    "action": "youtube_search",
-                    "value": query
-                })
+                steps.append({"action": "speak", "value": f"Searching YouTube for {query} sir"})
+                steps.append({"action": "youtube_search", "value": query})
 
             elif part.startswith("youtube "):
                 query = part.replace("youtube ", "", 1).strip()
-                steps.append({
-                    "action": "youtube_search",
-                    "value": query
-                })
+                steps.append({"action": "speak", "value": f"Searching YouTube for {query} sir"})
+                steps.append({"action": "youtube_search", "value": query})
 
             elif part.startswith("search spotify for "):
                 query = part.replace("search spotify for ", "", 1).strip()
-                steps.append({
-                    "action": "spotify_search",
-                    "value": query
-                })
+                steps.append({"action": "speak", "value": f"Searching Spotify for {query} sir"})
+                steps.append({"action": "spotify_search", "value": query})
 
             elif part.startswith("search spotify "):
                 query = part.replace("search spotify ", "", 1).strip()
-                steps.append({
-                    "action": "spotify_search",
-                    "value": query
-                })
+                steps.append({"action": "speak", "value": f"Searching Spotify for {query} sir"})
+                steps.append({"action": "spotify_search", "value": query})
 
             elif part.startswith("spotify "):
                 query = part.replace("spotify ", "", 1).strip()
-                steps.append({
-                    "action": "spotify_search",
-                    "value": query
-                })
+                steps.append({"action": "speak", "value": f"Searching Spotify for {query} sir"})
+                steps.append({"action": "spotify_search", "value": query})
 
             elif part.startswith("search google for "):
                 query = part.replace("search google for ", "", 1).strip()
-                steps.append({
-                    "action": "open_url",
-                    "value": cls.google_search_url(query)
-                })
+                steps.append({"action": "speak", "value": f"Searching Google for {query} sir"})
+                steps.append({"action": "open_url", "value": cls.google_search_url(query)})
 
             elif part.startswith("search google "):
                 query = part.replace("search google ", "", 1).strip()
-                steps.append({
-                    "action": "open_url",
-                    "value": cls.google_search_url(query)
-                })
+                steps.append({"action": "speak", "value": f"Searching Google for {query} sir"})
+                steps.append({"action": "open_url", "value": cls.google_search_url(query)})
 
             elif part.startswith("google "):
                 query = part.replace("google ", "", 1).strip()
-                steps.append({
-                    "action": "open_url",
-                    "value": cls.google_search_url(query)
-                })
+                steps.append({"action": "speak", "value": f"Searching Google for {query} sir"})
+                steps.append({"action": "open_url", "value": cls.google_search_url(query)})
 
             elif part in ["youtube", "you too", "you tube", "open youtube"]:
                 steps.append({
@@ -152,10 +149,8 @@ class Planner:
                 if query.startswith("for "):
                     query = query.replace("for ", "", 1).strip()
 
-                steps.append({
-                    "action": "open_url",
-                    "value": cls.google_search_url(query)
-                })
+                steps.append({"action": "speak", "value": f"Searching for {query} sir"})
+                steps.append({"action": "open_url", "value": cls.google_search_url(query)})
 
             elif part in ["open google", "google"]:
                 steps.append({
@@ -185,29 +180,26 @@ class Planner:
                 app = part.replace("open ", "", 1).strip()
 
                 steps.append({
+                    "action": "speak",
+                    "value": f"Certainly sir, opening {app}"
+                })
+                steps.append({
                     "action": "open_app",
                     "value": app
                 })
 
             elif part in ["standby", "stand by", "sleep", "go idle", "go to sleep"]:
-                steps.append({
-                    "action": "standby",
-                    "value": None
-                })
+                steps.append({"action": "standby", "value": None})
 
             elif part == "shutdown":
-                steps.append({
-                    "action": "shutdown",
-                    "value": None
-                })
+                steps.append({"action": "speak", "value": "Shutting down the system sir"})
+                steps.append({"action": "shutdown", "value": None})
 
             elif part == "restart":
-                steps.append({
-                    "action": "restart",
-                    "value": None
-                })
+                steps.append({"action": "speak", "value": "Restarting the system sir"})
+                steps.append({"action": "restart", "value": None})
 
             else:
                 pass
 
-            return steps
+        return steps
