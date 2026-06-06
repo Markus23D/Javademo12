@@ -1,4 +1,5 @@
 from urllib.parse import quote_plus
+from core.number_parser import extract_number
 
 
 class Planner:
@@ -35,7 +36,12 @@ class Planner:
         for part in cls.split_command(text):
             part = part.lower().strip()
 
-            if part.startswith("type "):
+            if part.startswith("wait ") or part.startswith("pause for "):
+                seconds = extract_number(part) or 1
+                steps.append({"action": "speak", "value": f"Waiting {seconds} seconds sir"})
+                steps.append({"action": "wait", "value": seconds})
+
+            elif part.startswith("type "):
                 steps.append({
                     "action": "speak",
                     "value": "Typing now sir"
@@ -69,24 +75,17 @@ class Planner:
                         "artist": None
                     }
 
+                song = value.get('song', '').strip()
+                artist = value.get('artist')
+                desc = f"{song} by {artist}" if artist else song
+                desc = desc if desc else "that"
+
                 if platform == "youtube":
-                    steps.append({
-                        "action": "speak",
-                        "value": f"Playing {value.get('song', '')} on YouTube sir"
-                    })
-                    steps.append({
-                        "action": "play_youtube",
-                        "value": value
-                    })
+                    steps.append({"action": "speak", "value": f"Playing {desc} on YouTube sir"})
+                    steps.append({"action": "play_youtube", "value": value})
                 else:
-                    steps.append({
-                        "action": "speak",
-                        "value": f"Playing {value.get('song', '')} on Spotify sir"
-                    })
-                    steps.append({
-                        "action": "play_song",
-                        "value": value
-                    })
+                    steps.append({"action": "speak", "value": f"Playing {desc} on Spotify sir"})
+                    steps.append({"action": "play_song", "value": value})
 
             elif part.startswith("search youtube for "):
                 query = part.replace("search youtube for ", "", 1).strip()

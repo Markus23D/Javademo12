@@ -40,6 +40,8 @@ class Executor:
             "switch_back": self.switch_back,
             "repeat_last_search": self.repeat_last_search,
             "list_windows": self.list_windows,
+            "volume": self.volume,
+            "media":  self.media,
         }
 
     def execute(self, plan):
@@ -51,6 +53,8 @@ class Executor:
 
             if not func:
                 print(f"[UNKNOWN ACTION] {action}")
+                from voice.tts import speak
+                speak("I don't know how to do that sir")
                 continue
 
             func(value)
@@ -68,7 +72,7 @@ class Executor:
         return str(value).strip()
 
     def open_app(self, value):
-        key = value.lower().strip()
+        key = value.lower().strip().rstrip(".!?,;")
         matched = None
 
         for app_name, data in self.apps.items():
@@ -80,6 +84,8 @@ class Executor:
 
         if not matched:
             print(f"[APP NOT FOUND] {value}")
+            from voice.tts import speak
+            speak(f"I don't know how to open {value} sir")
             return
 
         # Web-type entries open a URL in the browser
@@ -111,6 +117,8 @@ class Executor:
 
         except Exception as e:
             print(f"[ERROR OPENING APP] {value}: {e}")
+            from voice.tts import speak
+            speak(f"I had trouble opening {value} sir")
 
     def open_url(self, value):
         webbrowser.open(value)
@@ -226,45 +234,64 @@ class Executor:
         target = value.lower().strip()
         windows = gw.getAllWindows()
 
+        # Extra aliases for apps whose window titles don't match their common name
         aliases = {
-            "discord": ["discord"],
-            "spotify": ["spotify", "spotify premium"],
-            "chrome": ["chrome", "google chrome"],
+            "discord":  ["discord"],
+            "spotify":  ["spotify", "spotify premium"],
+            "chrome":   ["chrome", "google chrome"],
             "overwolf": ["overwolf"],
+            "vs code":  ["visual studio code", "vscode"],
+            "vscode":   ["visual studio code", "vscode"],
+            "explorer": ["file explorer", "windows explorer", "this pc"],
         }
 
         search_terms = aliases.get(target, [target])
 
+        # First pass — exact substring match
+        match = self._find_window(windows, search_terms)
+
+        # Second pass — fuzzy: any search term appears anywhere in the title
+        if not match:
+            match = self._find_window(windows, search_terms, fuzzy=True)
+
+        if match:
+            try:
+                if match.isMinimized:
+                    match.restore()
+
+                match.activate()
+                time.sleep(0.2)
+
+                x = match.left + match.width // 2
+                y = match.top + match.height // 2
+                pyautogui.click(x, y)
+
+                print(f"[SWITCHED WINDOW] {match.title}")
+
+                if self.context:
+                    self.context.set_active_app(target)
+
+            except Exception as e:
+                print("[SWITCH ERROR]", e)
+                from voice.tts import speak
+                speak(f"I couldn't switch to {value} sir")
+        else:
+            print(f"[WINDOW NOT FOUND] {target}")
+            from voice.tts import speak
+            speak(f"I can't find {value} sir, is it open?")
+
+    def _find_window(self, windows, search_terms, fuzzy=False):
         for window in windows:
             if not window.title:
                 continue
-
             title = window.title.lower()
-
-            if any(term in title for term in search_terms):
-                try:
-                    if window.isMinimized:
-                        window.restore()
-
-                    window.activate()
-                    time.sleep(0.2)
-
-                    x = window.left + window.width // 2
-                    y = window.top + window.height // 2
-                    pyautogui.click(x, y)
-
-                    print(f"[SWITCHED WINDOW] {window.title}")
-
-                    if self.context:
-                        self.context.set_active_app(target)
-
-                    return
-
-                except Exception as e:
-                    print("[SWITCH ERROR]", e)
-                    return
-
-        print(f"[WINDOW NOT FOUND] {target}")
+            if fuzzy:
+                if any(term in title or title in term for term in search_terms):
+                    return window
+            else:
+                if any(term in title for term in search_terms):
+                    return window
+        return None
 
     def repeat_last_search(self, value=None):
         if not self.context:
@@ -300,6 +327,15 @@ class Executor:
             return
 
         self.switch_window(previous)
+
+    def media(self, value):
+        pyautogui.press(value)
+
+    def volume(self, value):
+        key = value.get("key", "volumeup")
+        presses = value.get("presses", 5)
+        for _ in range(presses):
+            pyautogui.press(key)
 
     def list_windows(self, value=None):
         windows = gw.getAllWindows()

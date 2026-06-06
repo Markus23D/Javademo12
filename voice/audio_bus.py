@@ -6,6 +6,7 @@ class AudioBus:
     def __init__(self):
         self.stt_queue = Queue()
         self.tts_queue = Queue()
+        self.discord_queue = Queue()
 
     # -----------------------
     # STT INPUT
@@ -20,6 +21,18 @@ class AudioBus:
         text = self.stt_queue.get()
         print("[BUS] get_stt →", text)
         return text
+
+    # -----------------------
+    # DISCORD LOOPBACK
+    # -----------------------
+    def push_discord(self, text: str):
+        print("[BUS] push_discord →", text)
+        self.discord_queue.put(text)
+
+    def get_discord(self):
+        if self.discord_queue.empty():
+            return None
+        return self.discord_queue.get()
 
     # -----------------------
     # TTS

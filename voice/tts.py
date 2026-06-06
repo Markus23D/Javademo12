@@ -1,4 +1,5 @@
 import asyncio
+import re
 import edge_tts
 import sounddevice as sd
 import numpy as np
@@ -17,13 +18,28 @@ is_speaking = False
 # PUBLIC API
 # -----------------------
 def speak(text: str):
-    speech_queue.put(text)
+    # Split on sentence boundaries so the first sentence starts playing
+    # immediately while later sentences are buffered behind it.
+    sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+    for s in sentences:
+        s = s.strip()
+        if s:
+            speech_queue.put(s)
 
 
 def stop():
     global is_speaking
     is_speaking = False
     sd.stop()
+
+
+def clear_queue():
+    """Drain all pending speech so an interrupt feels immediate."""
+    while not speech_queue.empty():
+        try:
+            speech_queue.get_nowait()
+        except queue.Empty:
+            break
 
 
 # -----------------------
@@ -42,7 +58,6 @@ _worker_started = False
 
 
 def start_tts_worker():
-    """Start the TTS background thread. Call once from application startup."""
     global _worker_started
     if not _worker_started:
         threading.Thread(target=voice_worker, daemon=True).start()
@@ -68,7 +83,7 @@ async def _speak(text: str):
             if chunk["type"] == "audio":
                 audio_bytes.extend(chunk["data"])
 
-        if not audio_bytes:
+        if not audio_bytes or not is_speaking:
             return
 
         audio = AudioSegment.from_file(io.BytesIO(audio_bytes), format="mp3")

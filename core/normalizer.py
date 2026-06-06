@@ -35,15 +35,21 @@ class Normalizer:
         "open crow": "open chrome",
         "open crumb": "open chrome",
 
+        # Discord mishearings
+        "this cord": "discord",
+        "this code": "discord",
+        "disk cord": "discord",
+        "disk code": "discord",
+        "disco rd": "discord",
+        "this cord.": "discord",
+        "this code.": "discord",
+
         "switch to over both": "switch to overwatch",
         "switch to overwatch": "switch to overwatch",
 
         "switch to spotify premium": "switch to spotify",
         "switch spotify": "switch to spotify",
-        "play music": "play",
-        "play song": "play",
         "put on": "play",
-        "start music": "play",
         "might play ": "play ",
         "my play ": "play ",
         "mate play ": "play ",
@@ -92,8 +98,28 @@ class Normalizer:
         print(f"[NORMALIZER LEARNED] {wrong} -> {correct}")
 
     @classmethod
+    def forget(cls, wrong: str) -> bool:
+        wrong = wrong.lower().strip()
+        memory = cls._get_memory()
+
+        if wrong not in memory:
+            return False
+
+        del memory[wrong]
+        cls._memory_cache = memory
+        cls.save_memory(memory)
+        print(f"[NORMALIZER FORGOT] {wrong}")
+        return True
+
+    @classmethod
+    def list_learned(cls) -> dict:
+        return dict(cls._get_memory())
+
+    @classmethod
     def clean(cls, text: str) -> str:
+        import re
         text = text.lower().strip()
+        text = re.sub(r"[.!?,;]+", "", text).strip()
 
         replacements = {}
         replacements.update(cls.DEFAULT_REPLACEMENTS)

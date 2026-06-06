@@ -1,33 +1,52 @@
-from urllib.parse import quote_plus
-
+import requests
 from skills.base import Skill
 from skills.registry import skill
+from config import DEFAULT_CITY
 
 
 @skill
 class WeatherSkill(Skill):
 
-    name = "Weather"
+    name = "weather"
+
+    TRIGGERS = ["weather", "temperature", "will it rain", "is it cold", "is it hot", "how hot", "how cold"]
 
     def can_handle(self, text: str) -> float:
-        return 1.0 if "weather" in text.lower() else 0.0
+        text = text.lower()
+        if any(t in text for t in self.TRIGGERS):
+            return 0.97
+        return 0.0
 
     def handle(self, text: str, context):
         text = text.lower().strip()
 
-        # Try to extract a location from the query
-        location = None
-        for prefix in ["weather in ", "weather for ", "weather at "]:
+        location = DEFAULT_CITY
+        for prefix in ["weather in ", "weather for ", "temperature in ", "weather at "]:
             if prefix in text:
                 location = text.split(prefix, 1)[1].strip()
                 break
 
-        if location:
-            url = f"https://www.google.com/search?q={quote_plus('weather ' + location)}"
-        else:
-            url = "https://www.google.com/search?q=weather+today"
+        try:
+            response = requests.get(
+                f"https://wttr.in/{requests.utils.quote(location)}?format=j1",
+                timeout=8
+            )
+            data = response.json()
+            current = data["current_condition"][0]
 
-        return [
-            {"action": "speak", "value": "Looking up the weather for you sir."},
-            {"action": "open_url", "value": url},
-        ], 1.0
+            temp_c = current["temp_C"]
+            feels_c = current["FeelsLikeC"]
+            desc = current["weatherDesc"][0]["value"]
+            humidity = current["humidity"]
+
+            msg = (
+                f"Currently {desc} in {location.title()} sir. "
+                f"{temp_c} degrees Celsius, feels like {feels_c}. "
+                f"Humidity is {humidity} percent."
+            )
+
+        except Exception as e:
+            print("[WEATHER ERROR]", e)
+            msg = "I couldn't fetch the weather right now sir."
+
+        return [{"action": "speak", "value": msg}], 0.97

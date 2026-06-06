@@ -28,4 +28,16 @@ def detect_intent(text: str) -> str:
     if any(w in text for w in ["what is my", "who am i", "what do you remember"]):
         return "recall"
 
+    if any(p in text for p in ["clear chat", "forget our conversation", "reset conversation", "clear history"]):
+        return "clear_chat"
+
+    if any(p in text for p in ["what corrections", "what have you learned", "list corrections", "show corrections"]):
+        return "normalizer_list"
+
+    if any(p in text for p in ["remember that", "add app", "register app"]) and " is at " in text:
+        return "register_app"
+
+    if text.startswith("forget correction ") or text.startswith("forget that "):
+        return "normalizer_forget"
+
     return "chat"

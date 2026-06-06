@@ -1,5 +1,6 @@
 from core.intent import detect_intent
 from core.planner import Planner
+from core.normalizer import Normalizer
 from skills.registry import SKILL_REGISTRY
 from core.ai_chat import AIChat
 
@@ -17,7 +18,7 @@ def brain(text, context, memory, dialogue):
         wrong = text.split("when i say ", 1)[1].split(" you mean ", 1)[0].strip()
         correct = text.split(" you mean ", 1)[1].strip()
 
-        from core.normalizer import Normalizer
+
         Normalizer.learn(wrong, correct)
 
         return {
@@ -102,6 +103,102 @@ def brain(text, context, memory, dialogue):
                     {"action": "speak", "value": f"Understood. I will call you {name}."}
                 ]
             }
+
+    # -----------------------
+    # CLEAR CHAT HISTORY
+    # -----------------------
+    if intent == "clear_chat":
+        AIChat.clear_history()
+        return {
+            "skill": "clear_chat",
+            "confidence": 1.0,
+            "plan": [{"action": "speak", "value": "Conversation cleared sir. Fresh start."}]
+        }
+
+    # -----------------------
+    # REGISTER APP
+    # Example: "remember that notepad is at C:\Windows\notepad.exe"
+    # -----------------------
+    if intent == "register_app":
+        import json, os
+
+        try:
+            # strip leading phrase
+            raw = text
+            for prefix in ["remember that ", "add app ", "register app "]:
+                if raw.startswith(prefix):
+                    raw = raw[len(prefix):]
+                    break
+
+            name_part, path_part = raw.split(" is at ", 1)
+            name = name_part.strip()
+            path = path_part.strip()
+
+            commands_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "commands.json")
+
+            with open(commands_path, "r", encoding="utf-8") as f:
+                commands = json.load(f)
+
+            commands[f"open {name}"] = {
+                "type": "app",
+                "path": path,
+                "aliases": [name]
+            }
+
+            with open(commands_path, "w", encoding="utf-8") as f:
+                json.dump(commands, f, indent=2)
+
+            return {
+                "skill": "register_app",
+                "confidence": 1.0,
+                "plan": [{"action": "speak", "value": f"Done sir, I've added {name} to my app list."}]
+            }
+
+        except Exception as e:
+            print("[REGISTER APP ERROR]", e)
+            return {
+                "skill": "register_app",
+                "confidence": 1.0,
+                "plan": [{"action": "speak", "value": "I had trouble registering that app sir. Please try again."}]
+            }
+
+    # -----------------------
+    # NORMALIZER LIST / FORGET
+    # -----------------------
+    if intent == "normalizer_list":
+
+        learned = Normalizer.list_learned()
+
+        if not learned:
+            msg = "I have no learned corrections sir."
+        else:
+            items = ", ".join(f"{w} means {c}" for w, c in learned.items())
+            msg = f"I have learned the following corrections sir: {items}."
+
+        return {
+            "skill": "normalizer",
+            "confidence": 1.0,
+            "plan": [{"action": "speak", "value": msg}]
+        }
+
+    if intent == "normalizer_forget":
+
+        raw = text
+        for prefix in ["forget correction ", "forget that "]:
+            if raw.startswith(prefix):
+                raw = raw[len(prefix):]
+                break
+
+        wrong = raw.split(" means ")[0].strip() if " means " in raw else raw.strip()
+        success = Normalizer.forget(wrong)
+
+        msg = f"Done sir, I will no longer correct {wrong}." if success else f"I don't have a correction for {wrong} sir."
+
+        return {
+            "skill": "normalizer",
+            "confidence": 1.0,
+            "plan": [{"action": "speak", "value": msg}]
+        }
 
     # -----------------------
     # MEMORY RECALL
