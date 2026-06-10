@@ -1,0 +1,9 @@
+PySide6
+python-dotenv
+faster-whisper
+edge-tts
+numpy
+pyautogui
+pygetwindow
+requests
+sounddevice
